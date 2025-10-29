@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Text → Datei v2 (Syntax Highlight + Multi-Theme)</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } },
+    };
+  </script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+
+  <!-- Prism.js -->
+  <link href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-markup.min.js"></script>
+
+  <style>
+    html, body { height: 100%; }
+
+    /* === Theme Styles === */
+    body.dark .theme-panel {
+      background-color: rgb(24 24 27);
+      color: rgb(244 244 245);
+      border-color: rgb(39 39 42);
+    }
+    body.light .theme-panel {
+      background-color: #e6f7e6;
+      color: #1a2e1a;
+      border-color: #b7e5b7;
+      box-shadow: 0 0 10px rgba(100, 200, 100, 0.25);
+    }
+    body.violet .theme-panel {
+      background: linear-gradient(135deg, #f4c7fa, #e1b8ff, #fbe0ff);
+      color: rgb(74 29 150);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 12px rgba(255, 200, 255, 0.4);
+    }
+
+    /* ✨ Violet Glow Animation */
+    .lina-glow {
+      background: linear-gradient(135deg, #f5c4f0, #dcb8ff, #f9d4ff);
+      background-size: 400% 400%;
+      animation: glowMove 8s ease infinite;
+    }
+    @keyframes glowMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ============================= */
+    /* 🎨 Prism Syntax Farb-Themes   */
+    /* ============================= */
+    pre[class*="language-"] {
+      border-radius: 1rem;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      transition: all 0.3s ease;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    /* Dark */
+    body.dark pre[class*="language-"] { background: #0f0f10; color: #f4f4f5; }
+    body.dark .token.keyword { color: #c084fc; }
+    body.dark .token.string { color: #a7f3d0; }
+    body.dark .token.number { color: #fbbf24; }
+    body.dark .token.comment { color: #71717a; }
+
+    /* Light Mind */
+    body.light pre[class*="language-"] { background: #e8fae8; color: #1f2937; }
+    body.light .token.keyword { color: #059669; }
+    body.light .token.string { color: #2563eb; }
+    body.light .token.number { color: #b45309; }
+    body.light .token.comment { color: #6b7280; }
+
+    /* Lina Violet */
+    body.violet pre[class*="language-"] { background: #f8e7ff; color: #4c1d95; }
+    body.violet .token.keyword { color: #7c3aed; }
+    body.violet .token.string { color: #9333ea; }
+    body.violet .token.number { color: #c026d3; }
+    body.violet .token.comment { color: #6d28d9; }
+  </style>
+</head>
+
+<body class="bg-zinc-950 text-zinc-100 dark">
+  <div class="max-w-5xl mx-auto px-4 py-6">
+    <header class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-tight">Text → Datei v2</h1>
+        <p class="text-zinc-400 text-sm">Syntax Highlighting + Multi-Theme + JSON/YAML/HTML/Python Support</p>
+      </div>
+      <button id="themeToggle" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition text-sm">🌗 Dark</button>
+    </header>
+
+    <section class="mt-4 grid md:grid-cols-3 gap-4">
+      <div class="md:col-span-2 theme-panel rounded-2xl p-3 ring-1">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs uppercase tracking-wide text-zinc-400">Eingabe</span>
+            <span id="statusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">—</span>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] text-zinc-400">
+            <span>⏎ Zeilenumbruch</span>
+            <span>•</span>
+            <span><span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> = Formatieren</span>
+          </div>
+        </div>
+
+        <textarea id="input" class="w-full h-[45vh] resize-y bg-transparent rounded-xl p-3 outline-none ring-1 ring-zinc-800 focus:ring-2 focus:ring-indigo-500 font-mono text-sm" placeholder="Code oder JSON einfügen..."></textarea>
+
+        <pre id="highlight" class="language-json mt-3 rounded-2xl"></pre>
+
+        <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+          <span id="charCount">0 Zeichen</span>
+          <span>•</span>
+          <span id="lineCount">0 Zeilen</span>
+          <span>•</span>
+          <span id="byteSize">0 Bytes</span>
+        </div>
+      </div>
+
+      <div class="md:col-span-1 theme-panel rounded-2xl p-3 ring-1">
+        <label class="block text-xs uppercase tracking-wide text-zinc-400">Dateiname</label>
+        <input id="filename" class="w-full bg-transparent rounded-xl p-2 ring-1 ring-zinc-800 focus:ring-2 focus:ring-indigo-500" value="document" />
+
+        <label class="block text-xs uppercase tracking-wide text-zinc-400 mt-2">Endung</label>
+        <select id="ext" class="w-full bg-transparent rounded-xl p-2 ring-1 ring-zinc-800 focus:ring-2 focus:ring-indigo-500">
+          <option value="json">.json</option>
+          <option value="yaml">.yaml</option>
+          <option value="yml">.yml</option>
+          <option value="txt" selected>.txt</option>
+          <option value="html">.html</option>
+          <option value="py">.py</option>
+          <option value="md">.md</option>
+          <option value="csv">.csv</option>
+        </select>
+
+        <div class="flex items-center gap-2 mt-3">
+          <input id="pretty" type="checkbox" class="accent-indigo-500" checked />
+          <label for="pretty" class="text-sm text-zinc-300">Validieren & formatieren</label>
+        </div>
+
+        <div id="message" class="hidden p-2 rounded-lg text-sm mt-2"></div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button id="formatBtn" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold">Formatieren</button>
+          <button id="downloadBtn" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-semibold">Download</button>
+          <button id="loadBtn" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700">Datei laden</button>
+          <button id="copyBtn" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700">Kopieren</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="mt-6 text-center text-xs text-zinc-500">Offline-Tool • Syntax Highlighting • Multi-Theme</footer>
+  </div>
+
+  <input id="filePicker" type="file" accept=".json,.yaml,.yml,.txt,.md,.html,.py,.csv" class="hidden" />
+
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const input = $('#input'), filename = $('#filename'), ext = $('#ext'), pretty = $('#pretty');
+    const msg = $('#message'), charCount = $('#charCount'), lineCount = $('#lineCount'), byteSize = $('#byteSize');
+    const statusBadge = $('#statusBadge'), highlight = $('#highlight');
+
+    function updateStats() {
+      const text = input.value || '';
+      charCount.textContent = `${text.length} Zeichen`;
+      lineCount.textContent = `${(text.match(/\\n/g) || []).length + (text.length ? 1 : 0)} Zeilen`;
+      byteSize.textContent = `${new Blob([text]).size} Bytes`;
+      detectTypeBadge(text);
+    }
+
+    function detectTypeBadge(text) {
+      let label = '—';
+      if (/^\\s*[\\[{]/.test(text)) label = 'JSON';
+      else if (/^\\s*---/.test(text) || /:\\s/.test(text)) label = 'YAML';
+      else if (/^<html/i.test(text)) label = 'HTML';
+      else if (/^def |import |class /m.test(text)) label = 'Python';
+      statusBadge.textContent = label;
+    }
+
+    function setMessage(type, text) {
+      msg.classList.remove('hidden');
+      msg.classList.toggle('bg-emerald-900/40', type === 'ok');
+      msg.classList.toggle('text-emerald-300', type === 'ok');
+      msg.classList.toggle('bg-rose-900/40', type === 'err');
+      msg.classList.toggle('text-rose-300', type === 'err');
+      msg.textContent = text;
+    }
+
+    function clearMessage() { msg.classList.add('hidden'); }
+
+    function getMime(e) {
+      switch (e) {
+        case 'json': return 'application/json';
+        case 'yaml': case 'yml': return 'text/yaml';
+        case 'html': return 'text/html';
+        case 'py': return 'text/x-python';
+        case 'md': return 'text/markdown';
+        case 'csv': return 'text/csv';
+        default: return 'text/plain';
+      }
+    }
+
+    function formatAccordingToExt() {
+      const e = ext.value;
+      let text = input.value;
+      clearMessage();
+      try {
+        if (pretty.checked && e === 'json') {
+          const obj = JSON.parse(text);
+          text = JSON.stringify(obj, null, 2);
+          setMessage('ok', 'JSON validiert & formatiert.');
+        } else if (pretty.checked && (e === 'yaml' || e === 'yml')) {
+          const obj = jsyaml.load(text);
+          text = jsyaml.dump(obj, { lineWidth: -1 });
+          setMessage('ok', 'YAML validiert & formatiert.');
+        } else setMessage('ok', 'Text bleibt unverändert.');
+        input.value = text;
+        updateStats();
+        updateHighlight();
+      } catch (err) {
+        setMessage('err', 'Fehler: ' + err.message);
+      }
+    }
+
+    function downloadFile() {
+      const name = (filename.value || 'document').replace(/[^a-zA-Z0-9_\\-]/g, '_');
+      const blob = new Blob([input.value], { type: getMime(ext.value) + ';charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${name}.${ext.value}`; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    $('#downloadBtn').addEventListener('click', downloadFile);
+    $('#formatBtn').addEventListener('click', formatAccordingToExt);
+    $('#copyBtn').addEventListener('click', async()=>{await navigator.clipboard.writeText(input.value);setMessage('ok','Kopiert.');});
+    $('#loadBtn').addEventListener('click', ()=>$('#filePicker').click());
+    $('#filePicker').addEventListener('change', e=>{
+      const file=e.target.files[0]; if(!file) return;
+      const r=new FileReader();
+      r.onload=()=>{input.value=r.result;updateStats();updateHighlight();setMessage('ok',`Geladen: ${file.name}`);} 
+      r.readAsText(file);
+    });
+
+    input.addEventListener('input', ()=>{updateStats();updateHighlight();clearMessage();});
+    document.addEventListener('keydown', e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();formatAccordingToExt();}});
+
+    function updateHighlight() {
+      const val = input.value;
+      let lang = 'json';
+      if (/^---/.test(val) || /:\\s/.test(val)) lang = 'yaml';
+      else if (/^<\\s*html/i.test(val)) lang = 'markup';
+      else if (/^def |class |import /m.test(val)) lang = 'python';
+      highlight.className = `language-${lang} mt-3 rounded-2xl`;
+      highlight.textContent = val;
+      Prism.highlightElement(highlight);
+    }
+
+    // === Theme Toggle ===
+    const themeToggle = document.getElementById('themeToggle');
+    const THEMES = {
+      dark: { name:'🖤 Dark', apply(){document.body.className='dark bg-zinc-950 text-zinc-100 transition-all duration-500';} },
+      light: { name:'💚 Light Mind', apply(){document.body.className='light bg-gradient-to-br from-green-50 via-green-100 to-emerald-50 text-green-900 transition-all duration-500';} },
+      violet: { name:'💜 Lina Violet', apply(){document.body.className='violet lina-glow text-violet-950 transition-all duration-700';} }
+    };
+    const ORDER=['dark','light','violet'];
+    let current=localStorage.getItem('themeMode')||'dark';
+    applyTheme(current);
+    function applyTheme(mode){document.body.classList.remove('dark','light','violet');document.body.classList.add(mode);THEMES[mode].apply();themeToggle.textContent=THEMES[mode].name;localStorage.setItem('themeMode',mode);}
+    themeToggle.addEventListener('click',()=>{const next=ORDER[(ORDER.indexOf(current)+1)%ORDER.length];current=next;applyTheme(next);});
+
+    updateStats(); updateHighlight();
+  </script>
+</body>
+</html>
